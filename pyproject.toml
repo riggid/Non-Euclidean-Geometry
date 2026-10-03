@@ -1,0 +1,19 @@
+[project]
+name = "non-euclidean-geometry"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "riggid", email = "tandonshreyansh07@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "pyside6>=6.11.2",
+]
+
+[project.scripts]
+non-euclidean-geometry = "non_euclidean_geometry:main"
+
+[build-system]
+requires = ["uv_build>=0.12.22,<0.13.0"]
+build-backend = "uv_build"
