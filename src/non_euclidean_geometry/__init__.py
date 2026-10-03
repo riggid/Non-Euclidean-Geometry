@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from non-euclidean-geometry!")
+"""Interactive visualization and comparison of Euclidean and non-Euclidean geometries."""

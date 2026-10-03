@@ -1,7 +1,7 @@
 [project]
 name = "non-euclidean-geometry"
 version = "0.1.0"
-description = "Add your description here"
+description = "Showcasing non euclidean geometry in python"
 readme = "README.md"
 authors = [
     { name = "riggid", email = "tandonshreyansh07@gmail.com" }
@@ -9,10 +9,16 @@ authors = [
 requires-python = ">=3.14"
 dependencies = [
     "pyside6>=6.11.2",
+    "numpy>=2.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
 ]
 
 [project.scripts]
-non-euclidean-geometry = "non_euclidean_geometry:main"
+non-euclidean-geometry = "non_euclidean_geometry.main:main"
 
 [build-system]
 requires = ["uv_build>=0.12.22,<0.13.0"]
