@@ -1,92 +1,135 @@
-"""Application entry point."""
-
-import sys
-from pathlib import Path
+"""Application entry point — NiceGUI front end."""
 
 import numpy as np
-from PySide6.QtCore import QFile, QIODevice
-from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QApplication, QTableWidgetItem
+from nicegui import ui
 
 from .controllers.comparison_controller import ComparisonController
-from .controllers.geometry_controller import GeometryController
+from .controllers.geometry_controller import GEOMETRY_NAMES, GeometryController
 from .controllers.point_controller import PointController
-from .visualization.canvas import GeometryCanvas
+from .visualization.plot import build_figure
+
+_POINT_LABELS = ["A", "B", "C"]
+_RESULT_LABELS = ["Dist AB", "Dist BC", "Dist CA", "Angle Sum", "Curvature"]
 
 
-def load_ui():
-    """Load the main.ui file relative to this package."""
-    ui_path = Path(__file__).parent / "ui" / "main.ui"
-    ui_file = QFile(str(ui_path))
-    if not ui_file.open(QIODevice.ReadOnly):
-        raise RuntimeError(f"Cannot open {ui_path}: {ui_file.errorString()}")
-    loader = QUiLoader()
-    # Register the promoted widget class so QUiLoader can instantiate it
-    loader.registerCustomWidget(GeometryCanvas)
-    window = loader.load(ui_file)
-    ui_file.close()
-    if not window:
-        raise RuntimeError(loader.errorString())
-    return window
+def _result_rows() -> list[dict]:
+    return [
+        {"prop": label, "value": "—", "prop2": "", "value2": ""}
+        for label in _RESULT_LABELS
+    ]
 
 
-def main():
-    """Launch the Non-Euclidean Geometry Visualizer."""
-    app = QApplication(sys.argv)
-    window = load_ui()
-
-    # --- Wire up controllers ---
-    canvas = window.graphicsView  # Already a GeometryCanvas via widget promotion
+@ui.page("/")
+def _index() -> None:
     point_ctrl = PointController()
-    geo_ctrl = GeometryController(canvas)
+    geo_ctrl = GeometryController()
     comp_ctrl = ComparisonController()
 
-    # Populate results table with default labels
-    _init_results_table(window.resultsTable)
+    ui.dark_mode().enable()
+    ui.page_title("Non-Euclidean Geometry Visualizer")
+    ui.add_css("""
+        body { background-color: #080d1b; }
+        .card { background-color: #080d1b; border: 1px solid #1a1c30;
+                border-radius: 8px; padding: 16px; }
+        .accent-btn { background-color: #f0da76 !important; color: #080d1b !important; }
+        .accent-btn:hover { background-color: #f7e69a !important; }
+        .q-table th { background-color: #080d1b; color: #b1b0b2; }
+        .q-table td { color: #e8e8f0; }
+    """)
 
-    # --- Connect signals ---
-    def on_geometry_changed(name: str) -> None:
-        geo_ctrl.set_geometry(name)
+    with ui.row().classes("w-full items-start"):
+        # ---------------- Control column ----------------
+        with ui.column().classes("w-96 card"):
+            ui.label("Geometry Type").classes("font-bold")
+            combo = ui.select(list(GEOMETRY_NAMES), value="Euclidean").classes("w-full")
+
+            spins: dict[str, tuple] = {}
+            defaults = point_ctrl.get_all_points()
+            for label in _POINT_LABELS:
+                ui.label(f"Point {label}").classes("font-bold mt-4")
+                with ui.row():
+                    ui.label("X:")
+                    sx = ui.number(
+                        value=float(defaults[label][0]), min=-10, max=10, step=0.1,
+                        format="%.2f",
+                    ).classes("w-28")
+                    ui.label("Y:")
+                    sy = ui.number(
+                        value=float(defaults[label][1]), min=-10, max=10, step=0.1,
+                        format="%.2f",
+                    ).classes("w-28")
+                spins[label] = (sx, sy)
+
+            ui.button("Calculate", on_click=lambda: on_calculate()).classes("mt-4 accent-btn")
+            ui.button("Compare All", on_click=lambda: on_compare()).classes("accent-btn")
+
+            results = ui.table(
+                columns=[
+                    {"name": "prop", "label": "Property", "field": "prop"},
+                    {"name": "value", "label": "Value", "field": "value"},
+                    {"name": "prop2", "label": "Property", "field": "prop2"},
+                    {"name": "value2", "label": "Value", "field": "value2"},
+                ],
+                rows=_result_rows(),
+                row_key="prop",
+            ).classes("w-full mt-4")
+
+        # ---------------- Plot column ----------------
+        with ui.column().classes("grow card"):
+            plot = ui.plotly(build_figure(geo_ctrl.get_current_geometry_name()))
+            plot.classes("w-full h-[70vh]")
+
+    # ------------------------------------------------------------------
+    # Callbacks
+    # ------------------------------------------------------------------
+
+    def read_points() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        return tuple(
+            np.array([spins[label][0].value, spins[label][1].value], dtype=float)
+            for label in _POINT_LABELS
+        )
+
+    def redraw(points=None, geodesics=None) -> None:
+        plot.update_figure(
+            build_figure(geo_ctrl.get_current_geometry_name(), points, geodesics)
+        )
+
+    def on_geometry_changed(event) -> None:
+        geo_ctrl.set_geometry(event.value)
+        redraw()
 
     def on_calculate() -> None:
-        A = np.array([window.spinAX.value(), window.spinAY.value()])
-        B = np.array([window.spinBX.value(), window.spinBY.value()])
-        C = np.array([window.spinCX.value(), window.spinCY.value()])
+        A, B, C = read_points()
         point_ctrl.set_point("A", A)
         point_ctrl.set_point("B", B)
         point_ctrl.set_point("C", C)
         geo_ctrl.set_points(A, B, C)
-        result = geo_ctrl.calculate_triangle()
+        result, geodesics = geo_ctrl.calculate_triangle()
         if result is not None:
-            _populate_results(window.resultsTable, result)
+            _populate_results(results, result)
+        redraw(points=[A, B, C], geodesics=geodesics)
 
     def on_compare() -> None:
-        A = np.array([window.spinAX.value(), window.spinAY.value()])
-        B = np.array([window.spinBX.value(), window.spinBY.value()])
-        C = np.array([window.spinCX.value(), window.spinCY.value()])
-        results = comp_ctrl.compare(A, B, C)
-        # TODO: populate comparison view once team implements geometry modules
+        A, B, C = read_points()
+        comp_results = comp_ctrl.compare(A, B, C)
+        available = comp_ctrl.available_geometries()
+        if not available:
+            ui.notify(
+                "Geometry modules not yet implemented — comparison unavailable.",
+                type="warning",
+            )
+        else:
+            ui.notify(f"Compared across: {', '.join(available)}", type="info")
 
-    window.comboGeometry.currentTextChanged.connect(on_geometry_changed)
-    window.btnCalculate.clicked.connect(on_calculate)
-    window.btnCompare.clicked.connect(on_compare)
-
-    # Set initial geometry
-    geo_ctrl.set_geometry(window.comboGeometry.currentText())
-
-    window.show()
-    sys.exit(app.exec())
+    combo.on_value_change(on_geometry_changed)
 
 
-def _init_results_table(table) -> None:
-    """Set up the results table with default row labels."""
-    labels = ["Dist AB", "Dist BC", "Dist CA", "Angle Sum", "Curvature"]
-    for row, label in enumerate(labels):
-        table.setItem(row, 0, QTableWidgetItem(label))
-    table.setHorizontalHeaderLabels(["Property", "Value", "Property", "Value"])
+def main() -> None:
+    """Launch the Non-Euclidean Geometry Visualizer."""
+    ui.run(title="Non-Euclidean Geometry Visualizer", reload=False)
 
 
-def _populate_results(table, result) -> None:
+def _populate_results(table: ui.table, result) -> None:
     """Fill the results table from a TriangleResult object."""
     values = [
         result.side_lengths["AB"],
