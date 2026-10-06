@@ -15,6 +15,7 @@ from ..visualization.canvas import GeometryCanvas
 from ..visualization.euclidean_renderer import EuclideanRenderer
 from ..visualization.hyperbolic_renderer import HyperbolicRenderer
 from ..visualization.spherical_renderer import SphericalRenderer
+from ..geometry.euclidean import EuclideanGeometry
 
 # Map combo-box display names to renderer classes.
 # Geometry instances (from geometry/) are injected after the team implements them.
@@ -41,7 +42,7 @@ class GeometryController:
 
     def __init__(self, canvas: GeometryCanvas) -> None:
         self._canvas = canvas
-        self._geometry: Any = None          # Set by team after implementing geometry/
+        self._geometry: Any = EuclideanGeometry()
         self._points: dict[str, np.ndarray] = {}
         self._current_geometry_name: str = "Euclidean"
         self._renderer = EuclideanRenderer(canvas.scene())
@@ -65,13 +66,9 @@ class GeometryController:
         renderer_cls = _RENDERER_MAP[name]
         self._renderer = renderer_cls(self._canvas.scene())
         self._canvas.set_renderer(self._renderer)
-
-        # TODO: swap self._geometry instance once team implements geometry classes:
-        # from ..geometry.euclidean import EuclideanGeometry
-        # from ..geometry.spherical import SphericalGeometry
-        # from ..geometry.hyperbolic import HyperbolicGeometry
-        # _GEOMETRY_MAP = { "Euclidean": EuclideanGeometry(), ... }
-        # self._geometry = _GEOMETRY_MAP[name]
+        # Only the Euclidean model is implemented so far; other selections
+        # retain the existing preview behavior until their geometry is added.
+        self._geometry = EuclideanGeometry() if name == "Euclidean" else None
 
     def set_points(
         self,

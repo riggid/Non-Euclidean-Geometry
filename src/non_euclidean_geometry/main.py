@@ -88,8 +88,15 @@ def _init_results_table(table) -> None:
 
 def _populate_results(table, result) -> None:
     """Fill the results table from a TriangleResult object."""
-    # TODO: adapt once team defines TriangleResult in core/types.py
-    pass
+    values = [
+        result.side_lengths["AB"],
+        result.side_lengths["BC"],
+        result.side_lengths["CA"],
+        result.angle_sum,
+        result.curvature,
+    ]
+    for row, value in enumerate(values):
+        table.setItem(row, 1, QTableWidgetItem(f"{value:.6g}"))
 
 
 if __name__ == "__main__":
