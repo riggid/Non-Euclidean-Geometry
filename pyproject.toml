@@ -1,25 +1,23 @@
 [project]
-name = "non-euclidean-geometry"
+name = "geometry-linear-algebra"
 version = "0.1.0"
-description = "Showcasing non euclidean geometry in python"
+description = "Linear Algebraic Transformations in Euclidean and Non-Euclidean Geometries"
 readme = "README.md"
 authors = [
     { name = "riggid", email = "tandonshreyansh07@gmail.com" }
 ]
 requires-python = ">=3.14"
 dependencies = [
-    "nicegui>=3.17.1",
     "numpy>=2.1",
+    "matplotlib>=3.10",
+    "pandas>=2.2",
+    "jupyter>=1.1",
+    "ipykernel>=6.0",
+    "streamlit>=1.65.0",
     "plotly>=7.1.0",
+    "selenium>=4.50.0",
+    "playwright>=1.63.0",
 ]
-
-[dependency-groups]
-dev = [
-    "pytest>=8.0",
-]
-
-[project.scripts]
-non-euclidean-geometry = "non_euclidean_geometry.main:main"
 
 [build-system]
 requires = ["uv_build>=0.12.22,<0.13.0"]

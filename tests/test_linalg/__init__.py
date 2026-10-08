@@ -1,1 +1,0 @@
-# test_linalg package

@@ -1,1 +1,0 @@
-"""Geometry analysis and comparison."""
