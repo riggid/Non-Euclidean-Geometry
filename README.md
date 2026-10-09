@@ -6,9 +6,7 @@ A linear algebra project exploring how spatial curvature transforms geometric st
 
 ## 🚀 Live Demo
 
-[Open the Interactive Streamlit App](https://non-euclidean-geometry-mfad.streamlit.app/)
-
-*(Note: To deploy to Streamlit Community Cloud, connect repository `riggid/Non-Euclidean-Geometry`, main branch, with main file `app.py`)*
+[Open the Interactive Streamlit App](https://non-euclidean-geometry.streamlit.app/)
 
 ---
 
