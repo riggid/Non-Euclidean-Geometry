@@ -1,6 +1,10 @@
 """
 Visualization Helpers using Plotly
 Provides interactive 2D and 3D plotting routines for Streamlit.
+
+Figures are styled to match the app's dark Streamlit theme
+(background #0e1117, secondary #1e2129, text #fafafa) so that axes,
+gridlines, labels, legends and annotations stay legible on dark panels.
 """
 
 import numpy as np
@@ -8,6 +12,35 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from .spherical import spherical_great_circle_arc
 from .hyperbolic import poincare_projection, poincare_geodesic_arc
+
+# --- Dark theme palette (mirrors .streamlit/config.toml) ---
+BG_COLOR = '#0e1117'          # Streamlit backgroundColor
+PANEL_COLOR = '#1e2129'       # Streamlit secondaryBackgroundColor
+TEXT_COLOR = '#fafafa'        # Streamlit textColor
+GRID_COLOR = '#2d3340'
+ZEROLINE_COLOR = '#5a6270'
+PRIMARY_COLOR = '#ff4b4b'     # Streamlit primaryColor
+
+# Geometry-specific accents kept distinct from one another
+ORIGINAL_BLUE = '#4da3ff'     # brightened for contrast on dark panels
+SPHERE_BLUE = '#4da3ff'
+GEODESIC_RED = PRIMARY_COLOR
+GEODESIC_MAGENTA = '#ff6bd6'
+VERTEX_COLORS = ['#ffd54a', '#ff9f45', '#4dd6e8']  # yellow / orange / cyan
+
+
+def _base_layout(title: str, height: int = 450) -> dict:
+    """Shared dark-theme layout options for all figures."""
+    return dict(
+        title=dict(text=title, font=dict(size=16, color=TEXT_COLOR)),
+        paper_bgcolor=BG_COLOR,
+        plot_bgcolor=PANEL_COLOR,
+        font=dict(color=TEXT_COLOR),
+        legend=dict(font=dict(color=TEXT_COLOR), bgcolor='rgba(0,0,0,0)'),
+        margin=dict(l=20, r=20, t=40, b=20),
+        height=height,
+    )
+
 
 def create_euclidean_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, R: np.ndarray = None, title: str = "Euclidean 2D Plane"):
     """Creates a 2D Plotly figure for Euclidean triangle rotation."""
@@ -21,10 +54,11 @@ def create_euclidean_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, R: 
         x=orig_x, y=orig_y,
         mode='lines+markers+text',
         name='Original Triangle ABC',
-        line=dict(color='blue', width=3),
-        marker=dict(size=10, color='blue'),
+        line=dict(color=ORIGINAL_BLUE, width=3),
+        marker=dict(size=10, color=ORIGINAL_BLUE),
         text=['A', 'B', 'C', ''],
-        textposition='top center'
+        textposition='top center',
+        textfont=dict(color=TEXT_COLOR)
     ))
 
     # Rotated Triangle if R provided
@@ -39,22 +73,27 @@ def create_euclidean_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, R: 
             x=rot_x, y=rot_y,
             mode='lines+markers+text',
             name="Rotated Triangle A'B'C'",
-            line=dict(color='red', width=3, dash='dash'),
-            marker=dict(size=10, color='red'),
+            line=dict(color=PRIMARY_COLOR, width=3, dash='dash'),
+            marker=dict(size=10, color=PRIMARY_COLOR),
             text=["A'", "B'", "C'", ''],
-            textposition='top center'
+            textposition='top center',
+            textfont=dict(color=TEXT_COLOR)
         ))
 
-    fig.update_layout(
-        title=dict(text=title, font=dict(size=16, color='white')),
-        xaxis=dict(range=[-2.5, 2.5], zeroline=True, zerolinecolor='gray', gridcolor='#333333'),
-        yaxis=dict(range=[-2.5, 2.5], zeroline=True, zerolinecolor='gray', gridcolor='#333333', scaleanchor="x", scaleratio=1),
-        paper_bgcolor='#111111',
-        plot_bgcolor='#1e1e1e',
-        legend=dict(font=dict(color='white')),
-        margin=dict(l=20, r=20, t=40, b=20),
-        height=450
+    layout = _base_layout(title)
+    layout.update(
+        xaxis=dict(
+            range=[-2.5, 2.5], zeroline=True, zerolinecolor=ZEROLINE_COLOR,
+            gridcolor=GRID_COLOR, tickfont=dict(color=TEXT_COLOR),
+            title=dict(font=dict(color=TEXT_COLOR))
+        ),
+        yaxis=dict(
+            range=[-2.5, 2.5], zeroline=True, zerolinecolor=ZEROLINE_COLOR,
+            gridcolor=GRID_COLOR, scaleanchor="x", scaleratio=1,
+            tickfont=dict(color=TEXT_COLOR), title=dict(font=dict(color=TEXT_COLOR))
+        ),
     )
+    fig.update_layout(**layout)
     return fig
 
 def create_spherical_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, title: str = "Spherical Triangle on S² (pᵀp = 1)"):
@@ -70,10 +109,11 @@ def create_spherical_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, tit
 
     fig.add_trace(go.Surface(
         x=x, y=y, z=z,
-        opacity=0.2,
-        colorscale=[[0, 'lightblue'], [1, 'lightblue']],
+        opacity=0.22,
+        colorscale=[[0, SPHERE_BLUE], [1, SPHERE_BLUE]],
         showscale=False,
-        name='Unit Sphere S²'
+        name='Unit Sphere S²',
+        hoverinfo='skip'
     ))
 
     # Vertices A, B, C
@@ -82,9 +122,10 @@ def create_spherical_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, tit
         x=pts[:, 0], y=pts[:, 1], z=pts[:, 2],
         mode='markers+text',
         name='Vertices A, B, C',
-        marker=dict(size=8, color=['yellow', 'orange', 'cyan']),
+        marker=dict(size=8, color=VERTEX_COLORS),
         text=['A', 'B', 'C'],
-        textposition='top center'
+        textposition='top center',
+        textfont=dict(color=TEXT_COLOR, size=14)
     ))
 
     # Great-circle Geodesic Arcs AB, BC, CA
@@ -97,22 +138,21 @@ def create_spherical_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, tit
             x=arc[:, 0], y=arc[:, 1], z=arc[:, 2],
             mode='lines',
             name=label,
-            line=dict(color='red', width=6)
+            line=dict(color=GEODESIC_RED, width=6)
         ))
 
-    fig.update_layout(
-        title=dict(text=title, font=dict(size=16, color='white')),
-        scene=dict(
-            xaxis=dict(range=[-1.2, 1.2], backgroundcolor='#1e1e1e', gridcolor='#333333'),
-            yaxis=dict(range=[-1.2, 1.2], backgroundcolor='#1e1e1e', gridcolor='#333333'),
-            zaxis=dict(range=[-1.2, 1.2], backgroundcolor='#1e1e1e', gridcolor='#333333'),
-            aspectmode='cube'
-        ),
-        paper_bgcolor='#111111',
-        legend=dict(font=dict(color='white')),
-        margin=dict(l=10, r=10, t=40, b=10),
-        height=450
+    layout = _base_layout(title)
+    layout['margin'] = dict(l=10, r=10, t=40, b=10)
+    axis_style = dict(
+        range=[-1.2, 1.2], backgroundcolor=PANEL_COLOR, gridcolor=GRID_COLOR,
+        zerolinecolor=ZEROLINE_COLOR, tickfont=dict(color=TEXT_COLOR),
+        title=dict(font=dict(color=TEXT_COLOR)), showbackground=True
     )
+    layout['scene'] = dict(
+        xaxis=dict(axis_style), yaxis=dict(axis_style), zaxis=dict(axis_style),
+        aspectmode='cube'
+    )
+    fig.update_layout(**layout)
     return fig
 
 def create_hyperbolic_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, title: str = "Poincaré Disk (Hyperbolic Geodesics)"):
@@ -128,7 +168,7 @@ def create_hyperbolic_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, ti
         x=circle_x, y=circle_y,
         mode='lines',
         name='Boundary Circle |z| = 1',
-        line=dict(color='white', width=2, dash='dash')
+        line=dict(color=TEXT_COLOR, width=2, dash='dash')
     ))
 
     # Project vertices to Poincaré disk
@@ -141,9 +181,10 @@ def create_hyperbolic_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, ti
         x=pts[:, 0], y=pts[:, 1],
         mode='markers+text',
         name='Vertices A, B, C',
-        marker=dict(size=12, color=['yellow', 'orange', 'cyan']),
+        marker=dict(size=12, color=VERTEX_COLORS),
         text=['A', 'B', 'C'],
-        textposition='top center'
+        textposition='top center',
+        textfont=dict(color=TEXT_COLOR)
     ))
 
     # Geodesic Arcs AB, BC, CA
@@ -156,17 +197,21 @@ def create_hyperbolic_plotly_fig(A: np.ndarray, B: np.ndarray, C: np.ndarray, ti
             x=arc[:, 0], y=arc[:, 1],
             mode='lines',
             name=label,
-            line=dict(color='magenta', width=3)
+            line=dict(color=GEODESIC_MAGENTA, width=3)
         ))
 
-    fig.update_layout(
-        title=dict(text=title, font=dict(size=16, color='white')),
-        xaxis=dict(range=[-1.15, 1.15], zeroline=True, zerolinecolor='gray', gridcolor='#333333'),
-        yaxis=dict(range=[-1.15, 1.15], zeroline=True, zerolinecolor='gray', gridcolor='#333333', scaleanchor="x", scaleratio=1),
-        paper_bgcolor='#111111',
-        plot_bgcolor='#1e1e1e',
-        legend=dict(font=dict(color='white')),
-        margin=dict(l=20, r=20, t=40, b=20),
-        height=450
+    layout = _base_layout(title)
+    layout.update(
+        xaxis=dict(
+            range=[-1.15, 1.15], zeroline=True, zerolinecolor=ZEROLINE_COLOR,
+            gridcolor=GRID_COLOR, tickfont=dict(color=TEXT_COLOR),
+            title=dict(font=dict(color=TEXT_COLOR))
+        ),
+        yaxis=dict(
+            range=[-1.15, 1.15], zeroline=True, zerolinecolor=ZEROLINE_COLOR,
+            gridcolor=GRID_COLOR, scaleanchor="x", scaleratio=1,
+            tickfont=dict(color=TEXT_COLOR), title=dict(font=dict(color=TEXT_COLOR))
+        ),
     )
+    fig.update_layout(**layout)
     return fig

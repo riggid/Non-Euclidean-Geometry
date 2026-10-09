@@ -55,17 +55,21 @@ $$\text{Vectors} \longrightarrow \text{Matrices / Bilinear Forms} \longrightarro
 
 ## Screenshots
 
-### Euclidean — Orthogonal Transformations
-![Euclidean](screenshots/euclidean.png)
+### Euclidean Geometry
 
-### Elliptic Geometry — Spherical Model
-![Elliptic](screenshots/elliptic.png)
+![Euclidean view](screenshots/euclidean.png)
 
-### Hyperbolic Geometry — Poincaré Disk
-![Hyperbolic](screenshots/hyperbolic.png)
+### Elliptic Geometry
 
-### Compare All Three
-![Comparison](screenshots/compare.png)
+![Elliptic view](screenshots/elliptic.png)
+
+### Hyperbolic Geometry
+
+![Hyperbolic view](screenshots/hyperbolic.png)
+
+### Compare All Three Geometries
+
+![Geometry comparison](screenshots/compare.png)
 
 ---
 
